@@ -55,7 +55,7 @@ service to do this.
 
 The following shell snippet may also be useful. I can't remember where
 I found it, so unfortunately I can't credit the person who wrote
-it. It filters out all commented lines i squid.conf and just displays
+it. It filters out all commented lines in squid.conf and just displays
 any active configuration rules. Given that the default squid.conf is
 >100 lines long, this can be very useful.
 
