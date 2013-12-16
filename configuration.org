@@ -109,7 +109,7 @@ minimal one that will get you up and running.
 
 *** Useful dhcp Server Resources.
 - [[https://wiki.debian.org/DHCP_Server][Debian]] wiki article.
--[[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] lightweight and easy configure dns and dhcp server.
+- [[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] lightweight and easy configure dns and dhcp server.
 
 ** Setting Up Your Own Firewall.
 Not yet implemented.
