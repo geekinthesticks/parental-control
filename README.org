@@ -76,8 +76,10 @@ everyone else from accessing the internet.
 The third strand is running Shorewall firewall. My firewall has two
 ethernet network interfaces. One is connected to my internal network,
 the other is connected to an ADSL modem. Shorewall is a very flexible
-tool, written in Perl, to manage ???? your firewall. By default I have
-configured my network to allow all outgoing traffic, but only allow
-incoming traffic on certain ports e.g. ssh and http. Shorewall has
-many advanced features, for example I use traffic shaping to make sure
-my son's Xbox is not using all our network bandwidth.
+tool, written in Perl.  It configures Netfilter, which is built into
+the Linux kernel. For full information see http://shrewall.net . By
+default I have configured my network to allow all outgoing traffic,
+but only allow incoming traffic on certain ports e.g. ssh and
+http. Shorewall has many advanced features, for example I use traffic
+shaping to make sure my son's Xbox is not using all our network
+bandwidth.
