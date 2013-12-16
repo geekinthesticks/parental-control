@@ -85,4 +85,4 @@ shaping to make sure my son's Xbox is not using all our network
 bandwidth.
 
 * Configuration.
-See [[file:configuration.org][configuration.]]
+See [[fhttps://github.com/geekinthesticks/parental-control/blob/master/configuration.org][configuration]].
