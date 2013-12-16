@@ -1,0 +1,318 @@
+:SETUP:
+#+drawers: SETUP NOTES PROPERTIES
+#+title: Configuration.
+:END:
+
+* Overview.
+Listed below are the minimum configuration files you need. There are
+many more possible options, but these should provide a minimum working
+example.
+
+Almost all distros have squid, ISC dhcp server and Shorewall in their
+repos, so initial installation should be straightforward.
+
+** A Note for Non Emacs Users.
+You may be wondering what all this tangle noweb stuff is in the
+configuration files below. It lets me generate the configuration files
+directly from this document, so the documentation and configuration
+file information is all kept in the same document (aka Literate Programming).
+
+You can find more information at [[http://org-mode.org][org-mode]] and [[http://orgmode.org/worg/org-contrib/babel/][active code]] in org-mode.
+
+** OpenDNS.
+You will need an account at http://www.opendns.com/ to use the
+service. The basic account is free. You need to change the address
+that your router uses to look up DNS records to use OpenDNS
+servers. These are currently 208.67.222.222 and 208.67.220.220. Once
+you have done this you can use the OpenDNS web interface to configure
+your web content filtering.
+
+** Squid.
+The default squid confiuration file has literally hundreds of
+options. My example configuration file contains only the options
+required to work in my setup.
+
+By default Squid listens on port 3128. You can change this to another
+port if you wish. One problem is how do you configure all your devices
+to use Squid? You could configure each device to use a proxy server on
+port 3128, but doing this on every phone, tablet and computer that
+might be connected to your network is impractical. One solution is to
+set up Squid as a transparent proxy. The simplest way to do this is to install
+Squid on your firewall/router and then redirect every request to port 80, except one
+that comes from the firewall itself, to Squid on port 3128. Note that
+Squid won't proxy requests to secure servers (https).
+
+I use a Shorewall rule to do the squid redirection, but you can just
+add the relevant ip chains rule yourself:
+
+#+begin_src shell
+iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 3128
+#+end_src
+
+You would need to place this in a file that is executed on every boot,
+for example /etc/rc.local. Proper geeks will of course write a systemd
+service to do this.
+
+http://www.tldp.org/HOWTO/TransparentProxy.html#toc5
+
+The following shell snippet may also be useful. I can't remember where
+I found it, so unfortunately I can't credit the person who wrote
+it. It filters out all commented lines i squid.conf and just displays
+any active configuration rules. Given that the default squid.conf is
+>100 lines long, this can be very useful.
+
+#+begin_src shell
+grep -v "^#" /etc/squid/squid.conf | sed -e '/^$/d'
+#+end_src
+
+
+** Setting Up Your Own dhcp server.
+Most broadband routers come with a built in dhcp server, which will
+automatically configure the dhcp addresses of all the devices
+connected to your network. However, for maximum flexibility you will
+want to run your own dhcp server. In particular we want to assign a
+fixed ip address to a device to some devices using their MAC
+address. This makes it much easier to control the access these devices
+have to the internet. You may find that your router's built in dhcp
+server will let you assign a fixed ip address to a particular MAC
+address, in which case you can just go ahead and use the built in dhcp
+server.
+
+In case you were wondering what a MAC address is, it's a unique number
+assigned to each network device. While it's possible to spoof MAC
+addresses, they are generally considered to be a unique identifier for
+a device.
+
+To find the MAC address for a device:
+
+#+begin_src shell
+sudo ifconfig -a
+#+end_src
+
+For devices where it's not easy to run a shell e.g. phones and tablets
+once you have the dhcp server running, just look at your syslog
+
+#+begin_src shell
+Dec 16 09:17:49 localhost dhcpd: DHCPREQUEST for 192.168.0.223 from 00:01:6c:6c:c7:6b (myth2) via eth0
+#+end_src
+
+Here "00:01:6c:6c:c7:6b" is the MAC address.
+
+I prefer to use the ISC dhcp server, but other alternatives are
+available e.g. dnsmasq. The ISC server has many
+configuration options, which are documented in the example
+configuration file shipped with most distros. My example file is a
+minimal one that will get you up and running.
+
+** Setting Up Your Own Firewall.
+
+* Configuration Files.
+These are the basic configuration files. They aren't intended to be
+exhaustive, but should give you a good start. The actual configuration
+files are generated from this document and can be found in the
+configuration_files directory.
+
+** ISC dhcp server.
+A basic dhcp server that allocates dynamic addresses in the 192.168.0.100 -
+192.168.0.248 range. Addresses below 192.168.0.100 are allocated as
+fixed ip's based on the devices MAC address.
+
+#+begin_src sh :tangle  ./configuration_files/dhcpd.conf :exports none :noweb yes
+ddns-update-style none;
+ignore client-updates;
+authoritative;
+option local-wpad code 252 = text;
+
+# Don't need this if we aren't runing our own DNS server.
+#include "/etc/named/rndc.key";
+
+subnet 192.168.0.0 netmask 255.255.255.0 {
+
+    pool {
+             # Assign dhcp addresses in the range below.
+             # I reserve ip addresses below 192.168.0.100
+             # for static ip's.
+             range 192.168.0.100 192.168.0.248;
+             max-lease-time 1800; # 30 minutes
+             allow unknown-clients;
+    }
+
+    # The ip address of your router.
+    option routers 192.168.0.1;
+    option broadcast-address 192.168.0.255;
+
+    # A couple of examples of assigning fixed ip addresses using
+    # a devices MAC address.
+    host john {
+         hardware ethernet 00:22:5f:b1:ca:2f;
+         fixed-address 192.168.0.40;
+
+    }
+
+
+    host nexus7 {
+         hardware ethernet 08:60:6e:3d:3b:93;
+         fixed-address 192.168.0.63;
+
+    }
+
+
+}
+
+
+
+
+#+end_src
+
+** Squid.
+An example Squid configuration that regulates the times various devices
+can access the internet via port 80. Additionally, within the allowed time it will
+further restrict access to streaming audio/video files to a subset of
+the allowed time.
+
+#+begin_src
+# Note squid process rues from the bottom of the file upwards.
+# So the bottom rule bans everything and then we open up permissions
+# higher up in the config file.
+
+# Squid will drop out of the operator list on the *first* match.
+
+acl manager proto cache_object
+acl localhost src 127.0.0.1/32
+acl to_localhost dst 127.0.0.0/8 0.0.0.0/32
+acl my_networks src 192.168.0.0/24
+
+# Some url regexes for detecting flash.
+acl media rep_mime_type application/x-shockwave-flash
+acl mediapr urlpath_regex \.swf(\?.*)?$
+acl flv urlpath_regex -i .flv
+
+# Regex to detect YouTube.
+acl youtube_domains dstdomain .youtube.com .googlevideo.com .ytimg.com
+
+# BBC iPlayer and ITV Player
+acl iplayer url_regex .bbc.co.uk/iplayer
+acl itvplayer url_regex itvplayer
+
+# Include additional list of video and flash mime types to block.
+acl blockfiles urlpath_regex "/etc/squid3/blocked_files.conf"
+
+# You can define a block of ip addresses to use in
+# access rules.
+# These are the children's laptops.
+acl children src 192.168.0.42 192.168.0.43 192.168.0.44
+
+# Alternatively you can fine tune it by giving each device
+# its own ruleset.
+# These are some other devices.
+acl john src 192.168.0.40
+acl johnpc src 192.168.0.59
+acl ps3 src 192.168.0.41
+acl iphone src 192.168.0.57
+
+# Define a time slot when the children can
+# access the internet.
+# There are additional rules to stop video streaming
+# between certain hours.
+acl working_hours time 06:00-22:00
+
+# You can also specify days of the week.
+# M = Monday, etc.
+# acl officehours time MTWHFA 14:00-17:00
+
+# Can only watch videos between these hours
+acl video_hours time  20:30-23:59
+
+
+acl SSL_ports port 443
+acl Safe_ports port 80          # http
+acl Safe_ports port 21          # ftp
+acl Safe_ports port 443         # https
+acl Safe_ports port 70          # gopher
+acl Safe_ports port 210         # wais
+acl Safe_ports port 1025-65535  # unregistered ports
+acl Safe_ports port 280         # http-mgmt
+acl Safe_ports port 488         # gss-http
+acl Safe_ports port 591         # filemaker
+acl Safe_ports port 777         # multiling http
+acl CONNECT method CONNECT
+http_access allow manager localhost
+http_access deny manager
+http_access deny !Safe_ports
+http_access deny CONNECT !SSL_ports
+
+
+# Don't allow video streaming to these devices
+# outside the uncapped bandwidth period.
+http_access deny john blockfiles !video_hours
+http_access deny john youtube_domains !video_hours
+http_access deny john iplayer !video_hours
+http_access deny john itvplayer !video_hours
+http_access deny johnpc blockfiles !video_hours
+http_access deny johnpc youtube_domains !video_hours
+http_access deny johnpc iplayer !video_hours
+http_access deny johnpc itvplayer !video_hours
+http_access deny iphone blockfiles !video_hours
+http_access deny iphone youtube_domains !video_hours
+http_access deny iphone iplayer !video_hours
+http_access deny iphone itvplayer !video_hours
+http_access deny ps3 blockfiles !video_hours
+http_access deny ps3 youtube_domains !video_hours
+http_access deny ps3 iplayer !video_hours
+http_access deny ps3 itvplayer !video_hours
+http_access deny children iplayer !video_hours
+http_access deny children itvplayer !video_hours
+
+# Allow the localhost access.
+http_access allow localhost
+
+
+# General rule to allow access to all devices
+# in ournetwork.
+http_access allow my_networks
+
+# Allow basic internet access. However,
+# video access is further restricted by
+# the rules above.
+http_access allow children working_hours
+
+
+
+# Start by denying access to everything.
+http_access deny all
+icp_access deny all
+htcp_access deny all
+
+http_port 3128 transparent
+hierarchy_stoplist cgi-bin ?
+access_log /var/log/squid3/access.log squid
+refresh_pattern ^ftp:           1440    20%     10080
+refresh_pattern ^gopher:        1440    0%      1440
+refresh_pattern (cgi-bin|\?)    0       0%      0
+refresh_pattern .               0       20%     4320
+icp_port 3130
+coredump_dir /var/spool/squid3
+
+#+end_src
+
+#+begin_src
+# Block list for video and flash files.
+
+^application/vnd.ms.wms-hdr.asfv1$
+^application/x-mms-framed$
+^audio/x-pn-realaudio$
+^audio/mid$
+^audio/mpeg$
+^video/flv$
+^video/x-flv$
+^video/x-ms-asf$
+^video/x-ms-asf$
+^video/x-ms-wma$
+^video/x-ms-wmv$
+^video/x-msvideo$
+^video/x-shockwave-flash$
+^application/x-shockwave-flash$
+
+#+end_src
+** Shorewall.
+Not yet implemented.
