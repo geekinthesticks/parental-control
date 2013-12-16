@@ -63,7 +63,10 @@ any active configuration rules. Given that the default squid.conf is
 grep -v "^#" /etc/squid/squid.conf | sed -e '/^$/d'
 #+end_src
 
-There is a good tutorial on using Squid as a transparent proxy at: http://www.tldp.org/HOWTO/TransparentProxy.html#toc5
+*** Useful Squid Resources.
+- There is a good tutorial on using Squid as a transparent proxy at: http://www.tldp.org/HOWTO/TransparentProxy.html#toc5
+- The [[http://squid-cache.org][main]] Squid web site.
+- Squid [[http://www.squid-cache.org/Misc/log-analysis.html][log analysis]] tools.
 
 
 ** Setting Up Your Own dhcp server.
@@ -103,6 +106,10 @@ available e.g. dnsmasq. The ISC server has many
 configuration options, which are documented in the example
 configuration file shipped with most distros. My example file is a
 minimal one that will get you up and running.
+
+*** Useful dhcp Server Resources.
+- [[https://wiki.debian.org/DHCP_Server][Debian]] wiki article.
+-[[http://www.thekelleys.org.uk/dnsmasq/doc.html][dnsmasq]] lightweight and easy configure dns and dhcp server.
 
 ** Setting Up Your Own Firewall.
 Not yet implemented.
