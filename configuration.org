@@ -53,8 +53,6 @@ You would need to place this in a file that is executed on every boot,
 for example /etc/rc.local. Proper geeks will of course write a systemd
 service to do this.
 
-http://www.tldp.org/HOWTO/TransparentProxy.html#toc5
-
 The following shell snippet may also be useful. I can't remember where
 I found it, so unfortunately I can't credit the person who wrote
 it. It filters out all commented lines i squid.conf and just displays
@@ -64,6 +62,8 @@ any active configuration rules. Given that the default squid.conf is
 #+begin_src shell
 grep -v "^#" /etc/squid/squid.conf | sed -e '/^$/d'
 #+end_src
+
+There is a good tutorial on using Squid as a transparent proxy at: http://www.tldp.org/HOWTO/TransparentProxy.html#toc5
 
 
 ** Setting Up Your Own dhcp server.
