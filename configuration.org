@@ -28,7 +28,7 @@ you have done this you can use the OpenDNS web interface to configure
 your web content filtering.
 
 ** Squid.
-The default squid confiuration file has literally hundreds of
+The default squid configuration file has literally hundreds of
 options. My example configuration file contains only the options
 required to work in my setup.
 
@@ -165,7 +165,7 @@ subnet 192.168.0.0 netmask 255.255.255.0 {
 #+end_src
 
 ** Squid.
-An example Squid configuration that regulates the times various devices
+ An example Squid configuration that regulates the times various devices
 can access the internet via port 80. Additionally, within the allowed time it will
 further restrict access to streaming audio/video files to a subset of
 the allowed time.
