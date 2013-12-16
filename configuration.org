@@ -170,7 +170,7 @@ can access the internet via port 80. Additionally, within the allowed time it wi
 further restrict access to streaming audio/video files to a subset of
 the allowed time.
 
-#+begin_src
+#+begin_src sh :tangle  ./configuration_files/squid.conf :exports none :noweb yes
 # Note squid process rues from the bottom of the file upwards.
 # So the bottom rule bans everything and then we open up permissions
 # higher up in the config file.
@@ -295,7 +295,7 @@ coredump_dir /var/spool/squid3
 
 #+end_src
 
-#+begin_src
+#+begin_src sh :tangle  ./configuration_files/blocked_files.conf :exports none :noweb yes
 # Block list for video and flash files.
 
 ^application/vnd.ms.wms-hdr.asfv1$
