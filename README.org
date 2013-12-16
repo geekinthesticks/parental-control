@@ -19,7 +19,7 @@ that wont be blocked for various reasons. As a keen mountaineer I
 recently came across a site about Everest, which was discussing the
 ethics of people abandoning injured climbers. The site contained many
 graphic images of the dead bodies that litter the upper part of the
-mountain. I have seem lots of dead bodies, so I didn't find this
+mountain. I have seen lots of dead bodies, so I didn't find this
 especially disturbing, but I wouldn't want my children to find images
 like that.  This site wasn't blocked at all by OpenDNS. This is not a
 criticism of  OpenDNS, but a recognition that it can never be perfect.
