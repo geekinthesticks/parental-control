@@ -105,7 +105,7 @@ configuration file shipped with most distros. My example file is a
 minimal one that will get you up and running.
 
 ** Setting Up Your Own Firewall.
-
+Not yet implemented.
 * Configuration Files.
 These are the basic configuration files. They aren't intended to be
 exhaustive, but should give you a good start. The actual configuration
