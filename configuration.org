@@ -321,5 +321,114 @@ coredump_dir /var/spool/squid3
 ^application/x-shockwave-flash$
 
 #+end_src
+
+*** Proxy Authentication.
+If you have a VPS, it can be useful to set up a Squid proxy. If you
+travel abroad you can then use the proxy server to access sites such as
+BBC iPlayer, which block access from non UK countries. However, you
+probably don't want unauthorized users hogging you network bandwidth.
+
+The following configuration sets up a simple proxy which listens on
+port 8080, but requires authentication.
+
+#+begin_src shell
+
+# Change this line to point to your digest_file_auth program and
+# digest file.
+auth_param digest program /usr/lib/squid/digest_file_auth -c /etc/squid/squid.digest
+auth_param digest children 5
+auth_param digest realm MyRealm
+
+
+
+# Example rule allowing access from your local networks.
+# Adapt to list your (internal) IP networks from where browsing
+# should be allowed
+# acl localnet src 10.0.0.0/8	# RFC1918 possible internal network
+# acl localnet src 172.16.0.0/12	# RFC1918 possible internal network
+acl localnet src 192.168.0.0/16	# RFC1918 possible internal network
+acl localnet src fc00::/7       # RFC 4193 local private network range
+acl localnet src fe80::/10      # RFC 4291 link-local (directly plugged) machines
+
+acl home     src 46.33.134.31
+
+acl SSL_ports port 443
+acl Safe_ports port 80		# http
+acl Safe_ports port 21		# ftp
+acl Safe_ports port 443		# https
+acl Safe_ports port 70		# gopher
+acl Safe_ports port 210		# wais
+acl Safe_ports port 1025-65535	# unregistered ports
+acl Safe_ports port 280		# http-mgmt
+acl Safe_ports port 488		# gss-http
+acl Safe_ports port 591		# filemaker
+acl Safe_ports port 777		# multiling http
+acl CONNECT method CONNECT
+
+acl users proxy_auth REQUIRED
+http_access allow users
+
+#
+# Recommended minimum Access Permission configuration:
+#
+# Only allow cachemgr access from localhost
+http_access allow localhost manager
+http_access deny manager
+
+# Deny requests to certain unsafe ports
+http_access deny !Safe_ports
+
+# Deny CONNECT to other than secure SSL ports
+http_access deny CONNECT !SSL_ports
+
+# We strongly recommend the following be uncommented to protect innocent
+# web applications running on the proxy server who think the only
+# one who can access services on "localhost" is a local user
+#http_access deny to_localhost
+
+#
+# INSERT YOUR OWN RULE(S) HERE TO ALLOW ACCESS FROM YOUR CLIENTS
+#
+
+# Example rule allowing access from your local networks.
+# Adapt localnet in the ACL section to list your (internal) IP networks
+# from where browsing should be allowed
+http_access allow localnet
+http_access allow localhost
+
+
+# And finally deny all other access to this proxy
+http_access deny all
+
+# Squid normally listens to port 3128
+http_port 8080
+
+# Uncomment and adjust the following to add a disk cache directory.
+#cache_dir ufs /var/cache/squid 256 16 256
+
+# Leave coredumps in the first cache dir
+coredump_dir /var/cache/squid
+
+# Add any of your own refresh_pattern entries above these.
+refresh_pattern ^ftp:		1440	20%	10080
+refresh_pattern ^gopher:	1440	0%	1440
+refresh_pattern -i (/cgi-bin/|\?) 0	0%	0
+refresh_pattern .		0	20%	4320
+
+#+end_src
+
+To create the digest file holding the password
+
+#+begin_src shell
+sudo htdigest -c /etc/squid/squid.digest "MyRealm" ian
+
+#+end_src
+
+This will create a digest file with the user name "ian". Note the
+"MyRealm" option must match whatever you called your realm in
+squid.conf. Using the "-c" option will create a new file overwriting
+your old one. If you want to modify an existing file omit this
+option. As always "man htdigest" is your friend.
+
 ** Shorewall.
 Not yet implemented.
