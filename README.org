@@ -1,0 +1,83 @@
+:SETUP:
+#+drawers: SETUP NOTES PROPERTIES
+#+title: Parental Control of Internet Access.
+:END:
+
+* Introduction.
+As a parent of three teenage children, I have some concerns about what
+they may find accidentally or otherwise on the internet. As a start
+there is no substitute to discussing with your children what are the
+perils of the internet and how to avoid them. However, there are areas of
+the internet I would prefer my children not to find either by accident
+or design.
+
+I don't claim my system is by any means 100% reliable or
+foolproof. The average teenager will eventually learn how to use a
+proxy server, which can circumvent many of the controls described
+here. Also there are many sites that may contain unsuitable material
+that wont be blocked for various reasons. As a keen mountaineer I
+recently came across a site about Everest, which was discussing the
+ethics of people abandoning injured climbers. The site contained many
+graphic images of the dead bodies that litter the upper part of the
+mountain. I have seem lots of dead bodies, so I didn't find this
+especially disturbing, but I wouldn't want my children to find images
+like that.  This site wasn't blocked at all by OpenDNS. This is not a
+criticism of  OpenDNS, but a recognition that it can never be perfect.
+
+Finally there have been several successful prosecutions of parents
+whose children have downloaded music from illegal file sharing
+sites. Some of these have resulted in large fines. Simply blocking
+torrent sites on your network goes a long way to preventing this and
+would probably make it difficult for a successful prosecution against you.
+
+* System Overview.
+My parental control system consists of three strands:
+
+- OpenDNS
+- Squid proxy server
+- Shorewall firewall
+
+You don't need to implement all three of these, but can mix and
+match to suit your requirements.
+
+The simplest to implement is OpenDNS. To start create an account on
+their site. The basic account, which is all most people need is
+free. Now go into your routers configuration interface and set it to
+use OpenDNS as it's DNS server.  Now all requests to the internet from
+your network will pass through OpenDNS servers. By default all
+requests will be allowed through. However, you can use their web
+interface to block requests from your network to various service.
+
+There are several broad brush categories e.g. Torrent and Academic
+Fraud, but you can fine tune the options by allowing and denying
+specific sites. Now any request from a device from your network for a
+site in a blocked category will display a "Site is blocked"
+message. You must bear in mind that OpenDNS can't possibly keep track
+of all sites on the Internet in each of their categories, so they are
+not infallible. However, they do provide a useful tool
+
+The second strand in the Squid proxy server. You can use Squid to
+block specific sites. However, I use it to solve a different
+problem. My ISP has a network bandwidth cap between 8:00am and
+8:00pm. Outside of those hours we can use as much bandwidth as we
+want. If you have a family of three children all watching Youtube  you
+can use up your monthly bandwidth allowance in a couple of weeks.
+
+I use ISC dhcp server to assign all the childrens computer, phones
+and tablets to a block of static ip addresses. Squid then has rules
+that prevents these devices accessing streaming video in the
+capped bandwidth hours. An added benefit is that Squid logs the ip
+addresses of all sites visited from each device, so you can keep an
+eye on what sites are being accessed from your network. You can also
+produce a graph of bandwidth consumption for each device on the
+network and confront the bandwidth hog who is preventing
+everyone else from accessing the internet.
+
+The third strand is running Shorewall firewall. My firewall has two
+ethernet network interfaces. One is connected to my internal network,
+the other is connected to an ADSL modem. Shorewall is a very flexible
+tool, written in Perl, to manage ???? your firewall. By default I have
+configured my network to allow all outgoing traffic, but only allow
+incoming traffic on certain ports e.g. ssh and http. Shorewall has
+many advanced features, for example I use traffic shaping to make sure
+my son's Xbox is not using all our network bandwidth.
