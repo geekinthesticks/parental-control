@@ -83,3 +83,6 @@ but only allow incoming traffic on certain ports e.g. ssh and
 http. Shorewall has many advanced features, for example I use traffic
 shaping to make sure my son's Xbox is not using all our network
 bandwidth.
+
+* Configuration.
+See [[file:configuration.org][configuration.]]
