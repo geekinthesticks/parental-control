@@ -87,6 +87,9 @@ bandwidth.
 * Configuration.
 See [[https://github.com/geekinthesticks/parental-control/blob/master/configuration.org][configuration]].
 
+* Copyright.
+All the files in this repository are copyright Ian Barton (ian@wilkesley.net) 2013.
+
 * Licence.
 This file is part of parental-control.
 
