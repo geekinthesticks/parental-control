@@ -431,4 +431,478 @@ your old one. If you want to modify an existing file omit this
 option. As always "man htdigest" is your friend.
 
 ** Shorewall.
-Not yet implemented.
+The Shorewall configuration basically follows the [[http://www.shorewall.net/two-interface.htm][two interface]] example
+on the Shorewall site. Rather than repeat all this, I have simply
+included my configuration files, with notes.
+
+The file you are most likely to want to modify is rules, which
+controls what traffic is allowed in and out of your network.
+
+*** Interfaces.
+#+begin_src sh :tangle ./configuration_files/shorewall/interfaces :exports none :noweb yes
+#
+# Shorewall version 4.0 - Sample Interfaces File for two-interface configuration.
+# Copyright (C) 2006 by the Shorewall Team
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# See the file README.txt for further details.
+#------------------------------------------------------------------------------
+# For information about entries in this file, type "man shorewall-interfaces"
+###############################################################################
+#ZONE	INTERFACE	BROADCAST	OPTIONS
+
+# My network uses a bridged interface with br0 being the internal interface and ppp0
+# the external interface. Note ppp0 is an ADSL modem.
+net     ppp0            detect          tcpflags,nosmurfs,routefilter,logmartians
+loc     br0            detect           routeback,tcpflags,nosmurfs,routefilter=0,logmartians=0,bridge
+road    tun+
+
+#+end_src
+*** masq
+#+begin_src sh :tangle ./configuration_files/shorewall/masq :exports none :noweb yes
+#
+# Shorewall version 4.0 - Sample Masq file for two-interface configuration.
+# Copyright (C) 2006 by the Shorewall Team
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# See the file README.txt for further details.
+#------------------------------------------------------------------------------
+# For information about entries in this file, type "man shorewall-masq"
+###############################################################################
+#INTERFACE		SOURCE		ADDRESS		PROTO	PORT(S)	IPSEC	MARK
+#eth0			10.0.0.0/8,\
+#			169.254.0.0/16,\
+#			172.16.0.0/12,\
+#			192.168.0.0/16
+
+#eth0:0			192.168.0.0/16   217.146.125.41
+#eth0			192.168.0.0/24
+
+ppp0			192.168.0.0/24
+
+#+end_src
+
+
+*** Policy.
+#+begin_src sh :tangle ./configuration_files/shorewall/policy :exports none :noweb yes
+
+#
+# Shorewall version 4 - Policy File
+#
+# For information about entries in this file, type "man shorewall-policy"
+#
+# The manpage is also online at
+# http://www.shorewall.net/manpages/shorewall-policy.html
+#
+###############################################################################
+#SOURCE	DEST	POLICY		LOG	LIMIT:		CONNLIMIT:
+#				LEVEL	BURST		MASK
+$FW     net     ACCEPT
+loc	$FW	ACCEPT
+$FW	loc	ACCEPT
+
+loc             net             ACCEPT
+net             all             DROP            info
+
+
+# THE FOLLOWING POLICY MUST BE LAST
+all             all             REJECT          info
+
+#+end_src
+*** Rules.
+
+#+begin_src sh :tangle ./configuration_files/shorewall/rules :exports none :noweb yes
+#
+# Shorewall version 4.0 - Sample Rules File for two-interface configuration.
+# Copyright (C) 2006,2007 by the Shorewall Team
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# See the file README.txt for further details.
+#------------------------------------------------------------------------------
+# For information about entries in this file, type "man shorewall-rules"
+#############################################################################################################
+#ACTION		SOURCE		DEST		PROTO	DEST	SOURCE		ORIGINAL	RATE		USER/	MARK
+#							PORT	PORT(S)		DEST		LIMIT		GROUP
+#
+#	Accept DNS connections from the firewall to the network
+#
+DNS(ACCEPT)	$FW		net
+#
+#	Accept SSH connections from the local network for administration
+#
+SSH(ACCEPT)	loc		$FW
+#
+#	Allow Ping from the local network
+#
+Ping(ACCEPT)	loc		$FW
+
+#
+# Drop Ping from the "bad" net zone.. and prevent your log from being flooded..
+#
+
+#Ping(DROP)	net		$FW
+
+ACCEPT		$FW		loc		icmp
+ACCEPT		$FW		net		icmp
+#
+
+# Port forwarding for various services.
+Web(DNAT)       net		loc:192.168.0.50
+8081(DNAT)      net             loc:192.168.0.51
+8082(DNAT)      net             loc:192.168.0.51
+8083(DNAT)      net             loc:192.168.0.31
+
+IMAPS(DNAT)	net		loc:192.168.0.50
+IMAP(DNAT)	net		loc:192.168.0.50
+SMTP(DNAT)	net		loc:192.168.0.50
+MySQL(DNAT)	net		loc:192.168.0.50
+
+SSH(DNAT)	net		loc:192.168.0.50 TCP 22
+6600(DNAT)   net            loc:192.168.0.66 TCP
+
+# Xbox port forwarding.
+DNAT        net             loc:192.168.0.48  UDP 88
+DNAT        net             loc:192.168.0.48  UDP 3074
+DNAT        net             loc:192.168.0.48  UDP 3658
+DNAT        net             loc:192.168.0.48  UDP 9000
+DNAT        net             loc:192.168.0.48  UDP 6555
+
+DNAT        net             loc:192.168.0.48  TCP 88
+DNAT        net             loc:192.168.0.48  TCP 3074
+DNAT        net             loc:192.168.0.48  TCP 13505
+DNAT        net             loc:192.168.0.48  TCP 31400:31499
+
+# Google Talk.
+JabberPlain/ACCEPT    loc      net
+JabberSecure/ACCEPT   loc      net
+
+# Squid redirection.
+REDIRECT  loc         3128     tcp      www              -          !192.168.0.1
+
+
+#+end_src
+
+*** Routestopped.
+#+begin_src sh :tangle ./configuration_files/shorewall/routestopped :exports none :noweb yes
+#
+# Shorewall version 4.0 - Sample Routestopped File for two-interface configuration.
+# Copyright (C) 2006 by the Shorewall Team
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# See the file README.txt for further details.
+#------------------------------------------------------------------------------
+# For information about entries in this file, type "man shorewall-routestopped"
+##############################################################################
+#INTERFACE	HOST(S)                  OPTIONS
+br0
+
+#+end_src
+
+*** shorewall.conf.
+#+begin_src sh :tangle ./configuration_files/shorewall/shorewall.conf :exports none :noweb yes
+###############################################################################
+#
+# Shorewall version 4.0 - Sample shorewall.conf for two-interface
+#                         configuration.
+# Copyright (C) 2006,2007 by the Shorewall Team
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# See the file README.txt for further details.
+#
+# For information about the settings in this file, type "man shorewall.conf"
+#
+# The manpage is also online at
+# http://shorewall.net/manpages/shorewall.conf.html
+#
+###############################################################################
+#		       S T A R T U P   E N A B L E D
+###############################################################################
+
+STARTUP_ENABLED=Yes
+
+###############################################################################
+#		              V E R B O S I T Y
+###############################################################################
+
+VERBOSITY=1
+
+###############################################################################
+#                              C O M P I L E R
+#      (setting this to 'perl' requires installation of Shorewall-perl)
+###############################################################################
+
+SHOREWALL_COMPILER=
+
+###############################################################################
+#			       L O G G I N G
+###############################################################################
+
+LOGFILE=/var/log/messages
+
+STARTUP_LOG=/var/log/shorewall-init.log
+
+LOG_VERBOSITY=2
+
+LOGFORMAT="Shorewall:%s:%s:"
+
+LOGTAGONLY=No
+
+LOGRATE=
+
+LOGBURST=
+
+LOGALLNEW=
+
+BLACKLIST_LOGLEVEL=
+
+MACLIST_LOG_LEVEL=info
+
+TCP_FLAGS_LOG_LEVEL=info
+
+SMURF_LOG_LEVEL=info
+
+LOG_MARTIANS=Yes
+
+###############################################################################
+#	L O C A T I O N	  O F	F I L E S   A N D   D I R E C T O R I E S
+###############################################################################
+
+IPTABLES=
+
+IP=
+
+TC=
+
+IPSET=
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin
+
+SHOREWALL_SHELL=/bin/sh
+
+SUBSYSLOCK=
+
+MODULESDIR=
+
+CONFIG_PATH=/etc/shorewall:/usr/share/shorewall
+
+RESTOREFILE=
+
+IPSECFILE=zones
+
+LOCKFILE=
+
+###############################################################################
+#		D E F A U L T   A C T I O N S / M A C R O S
+###############################################################################
+
+DROP_DEFAULT="Drop"
+REJECT_DEFAULT="Reject"
+ACCEPT_DEFAULT="none"
+QUEUE_DEFAULT="none"
+NFQUEUE_DEFAULT="none"
+
+###############################################################################
+#                        R S H / R C P  C O M M A N D S
+###############################################################################
+
+RSH_COMMAND='ssh ${root}@${system} ${command}'
+RCP_COMMAND='scp ${files} ${root}@${system}:${destination}'
+
+###############################################################################
+#			F I R E W A L L	  O P T I O N S
+###############################################################################
+
+IP_FORWARDING=On
+
+ADD_IP_ALIASES=Yes
+
+ADD_SNAT_ALIASES=Yes
+
+RETAIN_ALIASES=No
+
+TC_ENABLED=Internal
+
+TC_EXPERT=No
+
+CLEAR_TC=Yes
+
+MARK_IN_FORWARD_CHAIN=No
+
+CLAMPMSS=Yes
+
+ROUTE_FILTER=No
+
+DETECT_DNAT_IPADDRS=No
+
+MUTEX_TIMEOUT=60
+
+ADMINISABSENTMINDED=Yes
+
+BLACKLISTNEWONLY=Yes
+
+DELAYBLACKLISTLOAD=No
+
+MODULE_SUFFIX=ko
+
+DISABLE_IPV6=No
+
+BRIDGING=No
+
+DYNAMIC_ZONES=No
+
+PKTTYPE=Yes
+
+NULL_ROUTE_RFC1918=No
+
+MACLIST_TABLE=filter
+
+MACLIST_TTL=
+
+SAVE_IPSETS=No
+
+MAPOLDACTIONS=No
+
+FASTACCEPT=No
+
+IMPLICIT_CONTINUE=No
+
+HIGH_ROUTE_MARKS=No
+
+USE_ACTIONS=Yes
+
+OPTIMIZE=1
+
+EXPORTPARAMS=No
+
+EXPAND_POLICIES=Yes
+
+KEEP_RT_TABLES=No
+
+DELETE_THEN_ADD=Yes
+
+MULTICAST=No
+
+DONT_LOAD=
+
+AUTO_COMMENT=Yes
+
+MANGLE_ENABLED=Yes
+
+USE_DEFAULT_RT=No
+
+RESTORE_DEFAULT_ROUTE=Yes
+
+AUTOMAKE=No
+
+WIDE_TC_MARKS=Yes
+
+TRACK_PROVIDERS=Yes
+
+ZONE2ZONE=2
+
+###############################################################################
+#			P A C K E T   D I S P O S I T I O N
+###############################################################################
+
+BLACKLIST_DISPOSITION=DROP
+
+MACLIST_DISPOSITION=REJECT
+
+TCP_FLAGS_DISPOSITION=DROP
+
+#LAST LINE -- DO NOT REMOVE
+
+#+end_src
+
+*** zones.
+#+begin_src sh :tangle ./configuration_files/shorewall/zones :exports none :noweb yes
+#
+# Shorewall version 4 - Zones File
+#
+# For information about this file, type "man shorewall-zones"
+#
+# The manpage is also online at
+# http://www.shorewall.net/manpages/shorewall-zones.html
+#
+###############################################################################
+#ZONE	TYPE		OPTIONS		IN			OUT
+#					OPTIONS			OPTIONS
+fw	firewall
+net	ipv4
+loc	ipv4
+
+#+end_src
+
+*** Macros.
+Various macros are defined. These are useful shorthand for including
+in the rules file. You can just use the macro name instead of  the
+whole definition. I name macros according to the port they affect.
+
+**** macro.8080
+#+begin_src sh :tangle ./configuration_files/shorewall/macro.8080 :exports none :noweb yes
+
+# This macro handles http via port 8080.
+#ACTION SOURCE  DEST    PROTO   DEST    SOURCE  RATE    USER/
+#                               PORT(S) PORT(S) LIMIT   GROUP
+PARAM   -       -       tcp     8080
+
+#+end_src
+
+**** macro.8081
+#+begin_src sh :tangle ./configuration_files/shorewall/macro.8081 :exports none :noweb yes
+
+# This macro handles http via port 8081.
+#ACTION SOURCE  DEST    PROTO   DEST    SOURCE  RATE    USER/
+#                               PORT(S) PORT(S) LIMIT   GROUP
+PARAM   -       -       tcp     8081
+
+#+end_src
+
+**** macro.8082
+#+begin_src sh :tangle ./configuration_files/shorewall/macro.8082 :exports none :noweb yes
+
+# This macro handles http via port 8082.
+#ACTION SOURCE  DEST    PROTO   DEST    SOURCE  RATE    USER/
+#                               PORT(S) PORT(S) LIMIT   GROUP
+PARAM   -       -       tcp     8082
+
+#+end_src
+**** macro.8083
+#+begin_src sh :tangle ./configuration_files/shorewall/macro.8083 :exports none :noweb yes
+
+# This macro handles http via port 8082.
+#ACTION SOURCE  DEST    PROTO   DEST    SOURCE  RATE    USER/
+#                               PORT(S) PORT(S) LIMIT   GROUP
+PARAM   -       -       tcp     8083
+
+#+end_src
+
+**** macro.6600
+#+begin_src sh :tangle ./configuration_files/shorewall/macro.6600 :exports none :noweb yes
+
+# This macro handles http via port 8082.
+#ACTION SOURCE  DEST    PROTO   DEST    SOURCE  RATE    USER/
+#                               PORT(S) PORT(S) LIMIT   GROUP
+PARAM   -       -       tcp     6600
+
+#+end_src
