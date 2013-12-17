@@ -435,8 +435,14 @@ The Shorewall configuration basically follows the [[http://www.shorewall.net/two
 on the Shorewall site. Rather than repeat all this, I have simply
 included my configuration files, with notes.
 
-The file you are most likely to want to modify is rules, which
-controls what traffic is allowed in and out of your network.
+The files you are most likely to want to modify are interfaces rules.
+The rules file controls what traffic is allowed in and out of your
+network.
+
+My interfaces are a little unusual because I run KVM with virtual
+machines, so have a bridged interface. You will most likely want to
+replace br0 in the configuration files with your ethernet
+interface. The ppp0 interface is my ADSL modem.
 
 *** Interfaces.
 #+begin_src sh :tangle ./configuration_files/shorewall/interfaces :exports none :noweb yes
