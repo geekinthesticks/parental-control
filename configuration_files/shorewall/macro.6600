@@ -1,0 +1,4 @@
+# This macro handles http via port 8082.
+#ACTION SOURCE  DEST    PROTO   DEST    SOURCE  RATE    USER/
+#                               PORT(S) PORT(S) LIMIT   GROUP
+PARAM   -       -       tcp     6600
